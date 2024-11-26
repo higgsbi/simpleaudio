@@ -16,12 +16,12 @@ const Str HELP_MSG =
         "  --higher     increments the output volume by 5\n"
         "  --lower      decrements the output volume by 5\n");
 
-typedef enum { INCREMENT, DECREMENT } MODIFY_FLAG;
+typedef enum { INCREMENT, DECREMENT } ModifyFlag;
 
 i32 get_volume();
 bool get_mute_input_status();
 bool get_mute_output_status();
-void modify_volume(MODIFY_FLAG flag, bool muted);
+void modify_volume(ModifyFlag flag, bool muted);
 
 int main(i32 argc, c8** argv) {
     if (argc < 2) {
@@ -134,7 +134,7 @@ bool get_mute_output_status() {
     return muted;
 }
 
-void modify_volume(MODIFY_FLAG flag, bool muted) {
+void modify_volume(ModifyFlag flag, bool muted) {
     i32 volume = get_volume();
     i32 volume_new;
 
