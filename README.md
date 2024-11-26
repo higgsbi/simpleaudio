@@ -20,9 +20,11 @@ The executable file will be `out/simpleaudio`
 
 ## Arguments
 
-`--mute`       toggles output mute status  
-`--mute-mic`   toggles input mute status  
-`--higher`     increments current output volume by 5  
-`--lower`      decrements current output volume by 5  
+<pre>
+--mute       toggles output mute status  
+--mute-mic   toggles input mute status  
+--higher     increments current output volume by 5  
+--lower      decrements current output volume by 5  
+</pre>
 
 
