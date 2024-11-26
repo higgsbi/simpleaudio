@@ -8,13 +8,13 @@ const i32 VOL_DELTA = 5;
 const u16 MAX_VOL = 153;
 const Str MAX_VOL_STR = str("153");
 const Str HELP_MSG =
-    str("\nNo argument provided\n"
-        "Flags: \n"
+    str("\n\nNo argument provided!\n\n"
+        "Arguments: \n"
         "\n"
-        "--mute       toggles output mute status\n"
-        "--mute-mic   toggles input mute status\n"
-        "--higher     increments the output volume by 5\n"
-        "--lower      decrements the output volume by 5\n");
+        "  --mute       toggles output mute status\n"
+        "  --mute-mic   toggles input mute status\n"
+        "  --higher     increments the output volume by 5\n"
+        "  --lower      decrements the output volume by 5\n");
 
 typedef enum { INCREMENT, DECREMENT } MODIFY_FLAG;
 
