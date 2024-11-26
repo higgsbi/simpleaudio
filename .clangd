@@ -1,0 +1,7 @@
+Diagnostics:
+  ClangTidy:
+    Add: [readability*]
+    Remove: [readability-function-cognitive-complexity]
+
+CompileFlags:
+  Add: [-Wall, -Wextra, -Wshadow -Wno-unused-function]

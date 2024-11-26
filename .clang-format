@@ -1,0 +1,13 @@
+---
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 120
+IncludeBlocks: Merge
+DerivePointerAlignment: false
+PointerAlignment: Left
+QualifierAlignment: Left
+AllowShortFunctionsOnASingleLine: None
+SpaceAfterCStyleCast: true
+SpacesInContainerLiterals: true
+
+---
