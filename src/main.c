@@ -3,10 +3,13 @@
 #include "ctk/io.h"
 #include "ctk/types/string.h"
 
-const i32 INT_BASE = 10;
+// SETTINGS
+#define MAX_VOL 153
 const i32 VOL_DELTA = 5;
-const u16 MAX_VOL = 153;
 const Str MAX_VOL_STR = str("153");
+
+// Constants
+const i32 INT_BASE = 10;
 const Str HELP_MSG =
     str("\n\nNo argument provided!\n\n"
         "Arguments: \n"
@@ -38,11 +41,8 @@ int main(i32 argc, c8** argv) {
         modify_volume(DECREMENT, muted);
     } else if (str_equals_str(&flag_str, &str("--mute"))) {
         if (muted) {
-            String* notify_cmd = string_from_format(&str("notify-send -r 9999 \"Volume\" \"%d%%\""), get_volume());
-            string_push_char(notify_cmd, '\0');
             system("pactl set-sink-mute @DEFAULT_SINK@ no");
-            system(notify_cmd->buffer);
-            string_free(notify_cmd);
+            command_runf(&str("notify-send -r 9999 \"Volume\" \"%d%%\""), get_volume());
         } else {
             system("pactl set-sink-mute @DEFAULT_SINK@ yes");
             system("notify-send -r 9999 \"Volume\" \"Muted\"");
@@ -136,15 +136,13 @@ bool get_mute_output_status() {
 
 void modify_volume(ModifyFlag flag, bool muted) {
     i32 volume = get_volume();
-    i32 volume_new;
 
     if (muted) {
-        String* notify_cmd = string_from_format(&str("notify-send -r 9999 \"Volume\" \"%d%%\""), volume);
-        string_push_char(notify_cmd, '\0');
-        system(notify_cmd->buffer);
-        string_free(notify_cmd);
+        command_runf(&str("notify-send -r 9999 \"Volume\" \"%d%%\""), volume);
         return;
     }
+
+    i32 volume_new;
 
     if (flag == INCREMENT) {
         if (volume + VOL_DELTA > MAX_VOL) {
@@ -160,16 +158,6 @@ void modify_volume(ModifyFlag flag, bool muted) {
         }
     }
 
-    String* set_cmd = string_from_format(&str("pactl set-sink-volume @DEFAULT_SINK@ %d%%"), volume_new);
-    string_push_char(set_cmd, '\0');
-
-    Str notify_msg = str("notify-send -r 9999 \"Volume\" \"%d%%\"");
-    String* notify_cmd = string_from_format(&notify_msg, volume_new);
-    string_push_char(notify_cmd, '\0');
-
-    system(set_cmd->buffer);
-    system(notify_cmd->buffer);
-
-    string_free(set_cmd);
-    string_free(notify_cmd);
+    command_runf(&str("pactl set-sink-volume @DEFAULT_SINK@ %d%%"), volume_new);
+    command_runf(&str("notify-send -r 9999 \"Volume\" \"%d%%\""), volume_new);
 }
