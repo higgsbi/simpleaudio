@@ -42,7 +42,7 @@ int main(i32 argc, c8** argv) {
         return 1;
     }
 
-    Str flag_str = str_from_cstr(&cstr(argv[1]));
+    Str flag_str = str_from_chars(argv[1]);
 
     if (str_equals_str(&flag_str, &str("--higher"))) {
         modify_volume(INCREMENT, get_mute_status(MUTE_INPUT));
