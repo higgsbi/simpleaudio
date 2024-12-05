@@ -44,7 +44,6 @@ build() {
     mkdir out
     cd build || exit 1
     if [[ $RELEASE == "true" ]]; then
-        echo -e "RELEASE!!!!\n\n\n\n\n"
         cmake -DCMAKE_BUILD_TYPE=Release ..
     else
         cmake -DCMAKE_BUILD_TYPE=Debug ..
