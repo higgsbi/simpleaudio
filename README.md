@@ -28,3 +28,11 @@ The executable file will be `out/simpleaudio`
 </pre>
 
 
+## Sample Sway/i3 Configuration
+
+<pre>
+bindsym XF86AudioRaiseVolume exec "YOUR_PATH/simpleaudio --higher"
+bindsym XF86AudioLowerVolume exec "YOUR_PATH/simpleaudio --lower"
+bindsym XF86AudioMute exec "YOUR_PATH/simpleaudio --mute"
+bindsym XF86AudioMicMute exec "YOUR_PATH/simpleaudio --mute-mic"
+</pre>
