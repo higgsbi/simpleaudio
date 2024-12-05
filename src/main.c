@@ -1,9 +1,6 @@
-#include <stdarg.h>
-#include <stdio.h>
 #include "ctk/io.h"
-#include "ctk/types/string.h"
 
-// SETTINGS
+// Settings
 #define MAX_VOL 153
 const i32 VOL_DELTA = 5;
 const Str MAX_VOL_STR = str("153");
@@ -19,57 +16,69 @@ const Str HELP_MSG =
         "  --higher     increments the output volume by 5\n"
         "  --lower      decrements the output volume by 5\n");
 
-typedef enum { INCREMENT, DECREMENT } ModifyFlag;
+// Commands
+const CStr CMD_GET_VOLUME = cstr("pactl get-sink-volume @DEFAULT_SINK@");
+const CStr CMD_GET_MUTE_INPUT = cstr("pactl get-sink-mute @DEFAULT_SINK@");
+const CStr CMD_GET_MUTE_OUTPUT = cstr("pactl get-source-mute @DEFAULT_SOURCE@");
+const CStr CMD_SET_MUTE_INPUT_OFF = cstr("pactl set-sink-mute @DEFAULT_SINK@ no");
+const CStr CMD_SET_MUTE_INPUT_ON = cstr("pactl set-sink-mute @DEFAULT_SINK@ yes");
+const CStr CMD_SET_MUTE_OUTPUT_OFF = cstr("pactl set-source-mute @DEFAULT_SOURCE@ no");
+const CStr CMD_SET_MUTE_OUTPUT_ON = cstr("pactl set-source-mute @DEFAULT_SOURCE@ yes");
+const CStr CMD_NOTIFY_MUTED = cstr("notify-send -r 9999 \"Volume\" \"Muted\"");
+const CStr CMD_NOTIFY_MIC_ON = cstr("notify-send -r 9999 \"Microphone\" \"Enabled\"");
+const CStr CMD_NOTIFY_MIC_OFF = cstr("notify-send -r 9999 \"Microphone\" \"Disabled\"");
+const Str CMD_FMT_NOTIFY_VOLUME = str("notify-send -r 9999 \"Volume\" \"%d%%\"");
+const Str CMD_FMT_SET_VOLUME = str("pactl set-sink-volume @DEFAULT_SINK@ %d%%");
+
+typedef enum { INCREMENT, DECREMENT, MUTE_OUTPUT, MUTE_INPUT } ModifyFlag;
 
 i32 get_volume();
-bool get_mute_input_status();
-bool get_mute_output_status();
+bool get_mute_status(ModifyFlag flag);
 void modify_volume(ModifyFlag flag, bool muted);
 
 int main(i32 argc, c8** argv) {
     if (argc < 2) {
-        ctk_printf("%s\n", &HELP_MSG);
+        print(&str("%s\n"), &HELP_MSG);
         return 1;
     }
 
-    Str flag_str = str_from_cstr(argv[1]);
-    bool muted = get_mute_input_status();
+    Str flag_str = str_from_cstr(&cstr(argv[1]));
 
     if (str_equals_str(&flag_str, &str("--higher"))) {
-        modify_volume(INCREMENT, muted);
+        modify_volume(INCREMENT, get_mute_status(MUTE_INPUT));
     } else if (str_equals_str(&flag_str, &str("--lower"))) {
-        modify_volume(DECREMENT, muted);
+        modify_volume(DECREMENT, get_mute_status(MUTE_INPUT));
     } else if (str_equals_str(&flag_str, &str("--mute"))) {
-        if (muted) {
-            system("pactl set-sink-mute @DEFAULT_SINK@ no");
-            command_runf(&str("notify-send -r 9999 \"Volume\" \"%d%%\""), get_volume());
+        if (get_mute_status(MUTE_INPUT)) {
+            command_run(&CMD_SET_MUTE_INPUT_OFF);
+            command_runf(&CMD_FMT_NOTIFY_VOLUME, get_volume());
         } else {
-            system("pactl set-sink-mute @DEFAULT_SINK@ yes");
-            system("notify-send -r 9999 \"Volume\" \"Muted\"");
+            command_run(&CMD_SET_MUTE_INPUT_ON);
+            command_run(&CMD_NOTIFY_MUTED);
         }
     } else if (str_equals_str(&flag_str, &str("--mute-mic"))) {
-        if (get_mute_output_status()) {
-            system("pactl set-source-mute @DEFAULT_SOURCE@ no");
-            system("notify-send -r 9999 \"Microphone\" \"Enabled\"");
+        if (get_mute_status(MUTE_OUTPUT)) {
+            command_run(&CMD_SET_MUTE_OUTPUT_OFF);
+            command_run(&CMD_NOTIFY_MIC_ON);
         } else {
-            system("pactl set-source-mute @DEFAULT_SOURCE@ yes");
-            system("notify-send -r 9999 \"Microphone\" \"Disabled\"");
+            command_run(&CMD_SET_MUTE_OUTPUT_ON);
+            command_run(&CMD_NOTIFY_MIC_OFF);
         }
     } else {
-        ctk_printf("%s\n", &HELP_MSG);
+        print(&str("%s\n"), &HELP_MSG);
     }
 
     return 0;
 }
 
 i32 get_volume() {
-    FILE* mute_buffer = popen("pactl get-sink-volume @DEFAULT_SINK@", "r");
+    Process* process = process_start(PROCESS_READ, &CMD_GET_VOLUME);
     char character;
     char number[4] = "0\0\0\0";
     usize number_index = 0;
     bool first_slash_found = false;
 
-    while ((character = fgetc(mute_buffer)) && number_index < MAX_VOL_STR.length && character != '%') {
+    while ((character = fgetc(process)) && number_index < MAX_VOL_STR.length && character != '%') {
         if (character == '/') {
             first_slash_found = true;
             continue;
@@ -85,17 +94,22 @@ i32 get_volume() {
         }
     }
 
-    pclose(mute_buffer);
-
+    process_end(process);
     return strtol(number, null, INT_BASE);
 }
 
-bool get_mute_input_status() {
-    FILE* mute_buffer = popen("pactl get-sink-mute @DEFAULT_SINK@", "r");
+bool get_mute_status(ModifyFlag flag) {
+    Process* process;
     char character;
     bool muted = false;
 
-    while ((character = fgetc(mute_buffer))) {
+    if (flag == MUTE_INPUT) {
+        process = process_start(PROCESS_READ, &CMD_GET_MUTE_INPUT);
+    } else {
+        process = process_start(PROCESS_READ, &CMD_GET_MUTE_OUTPUT);
+    }
+
+    while ((character = fgetc(process))) {
         if (character == 'y') {
             muted = true;
             break;
@@ -107,30 +121,7 @@ bool get_mute_input_status() {
         }
     }
 
-    pclose(mute_buffer);
-
-    return muted;
-}
-
-bool get_mute_output_status() {
-    FILE* mute_buffer = popen("pactl get-source-mute @DEFAULT_SOURCE@", "r");
-    char character;
-    bool muted = false;
-
-    while ((character = fgetc(mute_buffer))) {
-        if (character == 'y') {
-            muted = true;
-            break;
-        }
-
-        if (character == 'n') {
-            muted = false;
-            break;
-        }
-    }
-
-    pclose(mute_buffer);
-
+    process_end(process);
     return muted;
 }
 
@@ -138,7 +129,7 @@ void modify_volume(ModifyFlag flag, bool muted) {
     i32 volume = get_volume();
 
     if (muted) {
-        command_runf(&str("notify-send -r 9999 \"Volume\" \"%d%%\""), volume);
+        command_runf(&CMD_FMT_NOTIFY_VOLUME, volume);
         return;
     }
 
@@ -158,6 +149,6 @@ void modify_volume(ModifyFlag flag, bool muted) {
         }
     }
 
-    command_runf(&str("pactl set-sink-volume @DEFAULT_SINK@ %d%%"), volume_new);
-    command_runf(&str("notify-send -r 9999 \"Volume\" \"%d%%\""), volume_new);
+    command_runf(&CMD_FMT_SET_VOLUME, volume_new);
+    command_runf(&CMD_FMT_NOTIFY_VOLUME, volume_new);
 }
